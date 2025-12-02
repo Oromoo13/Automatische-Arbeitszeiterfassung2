@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatische Arbeitszeiterfassung</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --success: #2ecc71;
+            --light: #ecf0f1;
+            --dark: #34495e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .share-section {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .share-btn {
+            padding: 8px 15px;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .share-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .status-card {
+            padding: 30px;
+            text-align: center;
+            background: var(--light);
+            margin: 20px;
+            border-radius: 8px;
+            border-left: 5px solid var(--secondary);
+        }
+        
+        .status-working {
+            border-left-color: var(--success);
+            background: #e8f6f3;
+        }
+        
+        .status-off {
+            border-left-color: var(--accent);
+            background: #fdedec;
+        }
+        
+        .time-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 20px 0;
+            color: var(--primary);
+        }
+        
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            padding: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        button {
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-start {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-stop {
+            background: var(--accent);
+            color: white;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .history-section {
+            padding: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: var(--primary);
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        
+        .summary-card h3 {
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+        
+        .summary-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .info-box {
+            background: #e8f4fc;
+            border-left: 4px solid var(--secondary);
+            padding: 15px;
+            margin: 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 15px;
+            background: var(--light);
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+        
+        .edit-btn, .delete-btn {
+            padding: 5px 10px;
+            margin: 0 2px;
+            font-size: 0.8rem;
+            border-radius: 3px;
+        }
+        
+        .edit-btn {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .month-summary {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .month-summary h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .day-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .day-row:last-child {
+            border-bottom: none;
+        }
+        
+        .day-date {
+            font-weight: 600;
+        }
+        
+        .day-hours {
+            color: var(--success);
+            font-weight: 600;
+        }
+        
+        .export-import-section {
+            padding: 15px 20px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            margin: 20px;
+        }
+        
+        .export-import-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Automatische Arbeitszeiterfassung</h1>
+            <p>Start bei der Ankunft - Bestätigung bei Feierabend</p>
+        </header>
+        
+        <div class="share-section">
+            <button class="share-btn" id="shareLinkBtn">Link teilen</button>
+            <button class="share-btn" id="shareDataBtn">Daten exportieren</button>
+            <button class="share-btn" id="importDataBtn">Daten importieren</button>
+            <button class="share-btn" id="shareSummaryBtn">Zusammenfassung teilen</button>
+            <button class="share-btn" id="backupDataBtn">Backup erstellen</button>
+            <button class="share-btn" id="restoreDataBtn">Backup wiederherstellen</button>
+            <button class="share-btn" id="clearDataBtn" style="background:var(--accent);">Alle Daten löschen</button>
+        </div>
+        
+        <div class="status-card" id="statusCard">
+            <h2>Aktueller Status</h2>
+            <div class="time-display" id="currentTime">--:--:--</div>
+            <p id="statusText">Bereit zum Start der Arbeitszeit</p>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-start" id="startBtn">Arbeit starten</button>
+            <button class="btn-stop" id="stopBtn" disabled>Feierabend</button>
+            <button class="btn-reset" id="resetBtn" disabled style="background:#95a5a6; color:white;">Timer zurücksetzen</button>
+        </div>
+        
+        <div class="info-box">
+            <p><strong>Info:</strong> Die Arbeitszeit startet automatisch beim Klick auf "Arbeit starten" und läuft bis zur Bestätigung von "Feierabend". Alle Daten werden lokal in Ihrem Browser gespeichert.</p>
+            <p><strong>Pause:</strong> Ab 6 Stunden = 30 min, ab 9 Stunden = 45 min (automatisch)</p>
+        </div>
+        
+        <div class="summary-cards">
+            <div class="summary-card">
+                <h3>Heutige Arbeitszeit</h3>
+                <div class="value" id="todayHours">0 h</div>
+            </div>
+            <div class="summary-card">
+                <h3>Wöchentliche Gesamtzeit</h3>
+                <div class="value" id="weekHours">0 h</div>
+            </div>
+            <div class="summary-card">
+                <h3>Monatliche Gesamtzeit</h3>
+                <div class="value" id="monthHours">0 h</div>
+            </div>
+            <div class="summary-card">
+                <h3>Monatliches Ziel</h3>
+                <div class="value" id="monthTarget">0 h</div>
+            </div>
+        </div>
+
+        <div class="info-box" id="targetSettings">
+            <h3>Ziel-Einstellungen</h3>
+            <p>Wähle, wie das Monatsziel berechnet werden soll:</p>
+            <label for="targetMethod">Methode:</label>
+            <select id="targetMethod">
+                <option value="werktage">Werktage × Tagesstunden (Standard)</option>
+                <option value="wochenformel">Wochenformel (z.B. 40 × 13 / 3)</option>
+            </select>
+            <div style="margin-top:8px;">
+                <label for="weeklyHours">Wochenstunden (für Wochenformel):</label>
+                <input type="number" id="weeklyHours" value="40" step="0.5" min="0" />
+            </div>
+            <p style="margin-top:8px; font-size:0.9rem; color:var(--dark);">Hinweis: Standard-Tagesarbeitszeit ist <strong>8 h</strong>. Pause (automatisch) beträgt <strong>30 min</strong> ab 6h, <strong>45 min</strong> ab 9h.</p>
+        </div>
+        
+        <div class="month-summary">
+            <h3>Monatsübersicht - Stunden pro Tag</h3>
+            <div id="monthDaysList">
+                <!-- Wird durch JavaScript gefüllt -->
+            </div>
+        </div>
+        
+        <div class="history-section">
+            <h2>Arbeitshistorie</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Startzeit</th>
+                        <th>Endzeit</th>
+                        <th>Arbeitszeit</th>
+                        <th>Pause</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody">
+                    <!-- Wird durch JavaScript gefüllt -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="history-section">
+            <h2>Manuellen Eintrag hinzufügen</h2>
+            <p>Wenn du nicht mit Start/Stop arbeitest, kannst du hier Tage eintragen; die Monatsanzeige startet so automatisch bei 0.</p>
+            <label for="entryDate">Datum:</label>
+            <input type="date" id="entryDate" />
+            <label for="entryHours">Geleistete Stunden (Dezimal, z.B. 8.25):</label>
+            <input type="number" id="entryHours" step="0.01" min="0" />
+            <label for="entryBreak">Pause (Minuten, optional):</label>
+            <input type="number" id="entryBreak" step="1" min="0" />
+            <button id="addEntryBtn">Eintrag speichern</button>
+        </div>
+        
+        <div class="export-import-section">
+            <h3>Daten sichern und wiederherstellen</h3>
+            <p>Exportiere deine Arbeitsdaten als Backup oder um sie auf einem anderen Gerät zu importieren.</p>
+            <div class="export-import-buttons">
+                <button class="share-btn" id="backupDataBtn">Backup erstellen</button>
+                <button class="share-btn" id="restoreDataBtn">Backup wiederherstellen</button>
+                <button class="share-btn" id="clearDataBtn" style="background:var(--accent);">Alle Daten löschen</button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Automatische Arbeitszeiterfassung &copy; 2023 - Funktioniert auf allen Geräten</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const currentTime = document.getElementById('currentTime');
+            const statusText = document.getElementById('statusText');
+            const statusCard = document.getElementById('statusCard');
+            const todayHours = document.getElementById('todayHours');
+            const weekHours = document.getElementById('weekHours');
+            const monthHours = document.getElementById('monthHours');
+            const monthTarget = document.getElementById('monthTarget');
+            const targetMethodSelect = document.getElementById('targetMethod');
+            const weeklyHoursInput = document.getElementById('weeklyHours');
+            const historyBody = document.getElementById('historyBody');
+            const monthDaysList = document.getElementById('monthDaysList');
+            const addEntryBtn = document.getElementById('addEntryBtn');
+            const entryDate = document.getElementById('entryDate');
+            const entryHours = document.getElementById('entryHours');
+            const entryBreak = document.getElementById('entryBreak');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            // Neue Teilen-Buttons
+            const shareLinkBtn = document.getElementById('shareLinkBtn');
+            const shareDataBtn = document.getElementById('shareDataBtn');
+            const importDataBtn = document.getElementById('importDataBtn');
+            const shareSummaryBtn = document.getElementById('shareSummaryBtn');
+            const backupDataBtn = document.getElementById('backupDataBtn');
+            const restoreDataBtn = document.getElementById('restoreDataBtn');
+            const clearDataBtn = document.getElementById('clearDataBtn');
+
+            // Konfiguration (vernünftige Voreinstellungen)
+            const dailyWorkHours = 8; // erwartet geleistete Stunden pro Arbeitstag
+
+            // Persistierte Einstellungen
+            const savedTargetMethod = localStorage.getItem('targetMethod') || 'werktage';
+            const savedWeeklyHours = parseFloat(localStorage.getItem('weeklyHours')) || 40;
+
+            // UI initialisieren mit gespeicherten Werten
+            targetMethodSelect.value = savedTargetMethod;
+            weeklyHoursInput.value = savedWeeklyHours;
+
+            let workInterval;
+            let workStartTime = null;
+            let isWorking = false;
+
+            // Daten aus localStorage laden
+            let workHistory = JSON.parse(localStorage.getItem('workHistory')) || [];
+
+            // NEU: Pause berechnen basierend auf Arbeitsdauer
+            function calculatePause(startTime, endTime) {
+                const hours = (endTime - startTime) / (1000 * 60 * 60); // Arbeitsdauer in Stunden
+                if (hours >= 9) return 45;
+                if (hours >= 6) return 30;
+                return 0;
+            }
+
+            // NEU: Pause aus Stunden berechnen (für manuelle Einträge)
+            function calculatePauseFromHours(hours) {
+                if (hours >= 9) return 45;
+                if (hours >= 6) return 30;
+            }
+
+            // Aktuelle Zeit anzeigen
+            function updateCurrentTime() {
+                const now = new Date();
+                currentTime.textContent = now.toLocaleTimeString('de-DE');
+            }
+
+            // Hilfsfunktionen
+            function formatDateToDE(date) {
+                const d = date.getDate().toString().padStart(2, '0');
+                const m = (date.getMonth() + 1).toString().padStart(2, '0');
+                const y = date.getFullYear();
+                return `${d}.${m}.${y}`;
+            }
+
+            function parseDEDateString(ddmmyyyy) {
+                // erwartet format dd.mm.yyyy
+                const parts = ddmmyyyy.split('.');
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+
+            function countWeekdaysInMonth(year, monthZeroBased) {
+                let count = 0;
+                const daysInMonth = new Date(year, monthZeroBased + 1, 0).getDate();
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const day = new Date(year, monthZeroBased, d).getDay();
+                    // day 0 = Sonntag, 6 = Samstag -> Werktage 1..5
+                    if (day >= 1 && day <= 5) count++;
+                }
+                return count;
+            }
+
+            // Timer für Arbeitszeit
+            function startWorkTimer() {
+                workStartTime = new Date();
+                isWorking = true;
+
+                // Persistenz
+                localStorage.setItem('activeWork', workStartTime.toISOString());
+
+                // Status aktualisieren
+                statusText.textContent = `Arbeitszeit gestartet um ${workStartTime.toLocaleTimeString('de-DE')}`;
+                statusCard.classList.remove('status-off');
+                statusCard.classList.add('status-working');
+
+                // Buttons aktualisieren
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                resetBtn.disabled = false;
+
+                // Intervall für Echtzeit-Anzeige
+                workInterval = setInterval(updateWorkTime, 1000);
+
+                // Heutige und wöchentliche Zeiten aktualisieren
+                updateSummary();
+            }
+
+            function stopWorkTimer() {
+                if (!workStartTime) return;
+
+                const workEndTime = new Date();
+                const rawHours = (workEndTime - workStartTime) / (1000 * 60 * 60); // Stunden
+
+                // NEU: Automatisch Pause berechnen
+                const breakMinutes = calculatePause(workStartTime, workEndTime);
+                const durationHours = Math.max(0, rawHours - (breakMinutes / 60));
+
+                // Arbeitsdaten speichern
+                const workRecord = {
+                    date: formatDateToDE(workStartTime),
+                    startTime: workStartTime.toLocaleTimeString('de-DE'),
+                    endTime: workEndTime.toLocaleTimeString('de-DE'),
+                    duration: durationHours.toFixed(2),
+                    break: breakMinutes
+                };
+
+                workHistory.push(workRecord);
+                localStorage.setItem('workHistory', JSON.stringify(workHistory));
+
+                // Persistenz aufräumen
+                localStorage.removeItem('activeWork');
+
+                // Status zurücksetzen
+                isWorking = false;
+                clearInterval(workInterval);
+
+                // Status aktualisieren
+                statusText.textContent = `Feierabend! Gearbeitet: ${durationHours.toFixed(2)} Stunden (Pause ${breakMinutes} min abgezogen)`;
+                statusCard.classList.remove('status-working');
+                statusCard.classList.add('status-off');
+
+                // Buttons aktualisieren
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                resetBtn.disabled = true;
+
+                // Historie und Zusammenfassung aktualisieren
+                updateHistory();
+                updateSummary();
+                updateMonthDays();
+            }
+
+            function updateWorkTime() {
+                // Live-Anzeige heutige Zeit: Summe gespeicherter Heute-Einträge plus laufende Zeit
+                const now = new Date();
+                let ongoing = 0;
+                if (isWorking && workStartTime) {
+                    const raw = (now - workStartTime) / (1000 * 60 * 60);
+                    // Live: zeige bereits abgezogene Pause (nicht negativ)
+                    const breakMinutes = calculatePause(workStartTime, now);
+                    ongoing = Math.max(0, raw - (breakMinutes / 60));
+                }
+
+                const today = new Date().toLocaleDateString('de-DE');
+                const todayRecords = workHistory.filter(record => record.date === today);
+                const todayTotal = todayRecords.reduce((sum, record) => sum + parseFloat(record.duration), 0);
+
+                const total = todayTotal + ongoing;
+                todayHours.textContent = total.toFixed(2) + ' h';
+            }
+
+            function updateSummary() {
+                // Heutige Arbeitszeit berechnen (inkl. gespeicherter Einträge)
+                const today = new Date().toLocaleDateString('de-DE');
+                const todayRecords = workHistory.filter(record => record.date === today);
+                const todayTotal = todayRecords.reduce((sum, record) => sum + parseFloat(record.duration), 0);
+
+                // Wenn aktuell gearbeitet wird, live hinzufügen
+                if (isWorking && workStartTime) {
+                    const now = new Date();
+                    const ongoing = (now - workStartTime) / (1000 * 60 * 60);
+                    const breakMinutes = calculatePause(workStartTime, now);
+                    todayHours.textContent = (todayTotal + Math.max(0, ongoing - (breakMinutes / 60))).toFixed(2) + ' h';
+                } else {
+                    todayHours.textContent = todayTotal.toFixed(2) + ' h';
+                }
+
+                // Wöchentliche Arbeitszeit berechnen
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+                const weekRecords = workHistory.filter(record => {
+                    const recordDate = parseDEDateString(record.date);
+                    return recordDate >= oneWeekAgo;
+                });
+
+                const weekTotal = weekRecords.reduce((sum, record) => sum + parseFloat(record.duration), 0);
+                weekHours.textContent = weekTotal.toFixed(2) + ' h';
+
+                // Monatliche Gesamtzeit berechnen (aktueller Monat)
+                const now = new Date();
+                const thisYear = now.getFullYear();
+                const thisMonth = now.getMonth(); // 0-basiert
+
+                const monthRecords = workHistory.filter(record => {
+                    const rd = parseDEDateString(record.date);
+                    return rd.getFullYear() === thisYear && rd.getMonth() === thisMonth;
+                });
+                const monthTotal = monthRecords.reduce((sum, record) => sum + parseFloat(record.duration), 0);
+                monthHours.textContent = monthTotal.toFixed(2) + ' h';
+
+                // Monatsziel: wählbare Methode
+                let target = 0;
+                if (targetMethodSelect.value === 'wochenformel') {
+                    // Wochenformel: Wochenstunden * (13/3) approximiert Wochen pro Monat (~4.3333)
+                    const weekly = parseFloat(weeklyHoursInput.value) || 40;
+                    target = weekly * (13 / 3);
+                } else {
+                    const workingDays = countWeekdaysInMonth(thisYear, thisMonth);
+                    target = workingDays * dailyWorkHours;
+                }
+                monthTarget.textContent = target.toFixed(2) + ' h';
+            }
+
+            function updateHistory() {
+                historyBody.innerHTML = '';
+
+                // Letzte 10 Einträge anzeigen
+                const recentHistory = workHistory.slice(-10).reverse();
+
+                recentHistory.forEach((record, index) => {
+                    const originalIndex = workHistory.length - 1 - index; // Originaler Index im Array
+
+                    const row = document.createElement('tr');
+
+                    const dateCell = document.createElement('td');
+                    dateCell.textContent = record.date;
+
+                    const startCell = document.createElement('td');
+                    startCell.textContent = record.startTime || '-';
+
+                    const endCell = document.createElement('td');
+                    endCell.textContent = record.endTime || '-';
+
+                    const durationCell = document.createElement('td');
+                    durationCell.textContent = record.duration + ' h';
+
+                    const breakCell = document.createElement('td');
+                    breakCell.textContent = (record.break || 0) + ' min';
+
+                    const actionCell = document.createElement('td');
+                    
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Bearbeiten';
+                    editBtn.classList.add('edit-btn');
+                    editBtn.addEventListener('click', () => editRecord(originalIndex));
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Löschen';
+                    deleteBtn.classList.add('delete-btn');
+                    deleteBtn.addEventListener('click', () => deleteRecord(originalIndex));
+                    
+                    actionCell.appendChild(editBtn);
+                    actionCell.appendChild(deleteBtn);
+
+                    row.appendChild(dateCell);
+                    row.appendChild(startCell);
+                    row.appendChild(endCell);
+                    row.appendChild(durationCell);
+                    row.appendChild(breakCell);
+                    row.appendChild(actionCell);
+
+                    historyBody.appendChild(row);
+                });
+            }
+
+            function updateMonthDays() {
+                monthDaysList.innerHTML = '';
+                
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth();
+                
+                // Anzahl der Tage im aktuellen Monat ermitteln
+                const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+                
+                // Stunden und Pause pro Tag berechnen
+                const hoursPerDay = {};
+                const breakPerDay = {};
+                
+                workHistory.forEach(record => {
+                    const recordDate = parseDEDateString(record.date);
+                    if (recordDate.getFullYear() === currentYear && recordDate.getMonth() === currentMonth) {
+                        const day = recordDate.getDate();
+                        if (!hoursPerDay[day]) {
+                            hoursPerDay[day] = 0;
+                            breakPerDay[day] = 0;
+                        }
+                        hoursPerDay[day] += parseFloat(record.duration);
+                        breakPerDay[day] += (record.break || 0);
+                    }
+                });
+                
+                // Tage des Monats anzeigen
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayRow = document.createElement('div');
+                    dayRow.classList.add('day-row');
+                    
+                    const dateSpan = document.createElement('span');
+                    dateSpan.classList.add('day-date');
+                    dateSpan.textContent = `${day.toString().padStart(2, '0')}.${(currentMonth + 1).toString().padStart(2, '0')}.${currentYear}`;
+                    
+                    const hoursSpan = document.createElement('span');
+                    hoursSpan.classList.add('day-hours');
+                    const hours = hoursPerDay[day] || 0;
+                    const pause = breakPerDay[day] || 0;
+                    hoursSpan.textContent = `${hours.toFixed(2)} h (${pause} min Pause)`;
+                    
+                    dayRow.appendChild(dateSpan);
+                    dayRow.appendChild(hoursSpan);
+                    monthDaysList.appendChild(dayRow);
+                }
+            }
+
+            function editRecord(index) {
+                const record = workHistory[index];
+                
+                const newDate = prompt('Neues Datum (TT.MM.JJJJ):', record.date);
+                if (newDate === null) return;
+                
+                const newStartTime = prompt('Neue Startzeit (HH:MM):', record.startTime);
+                if (newStartTime === null) return;
+                
+                const newEndTime = prompt('Neue Endzeit (HH:MM):', record.endTime);
+                if (newEndTime === null) return;
+                
+                const newDuration = prompt('Neue Arbeitszeit (Stunden):', record.duration);
+                if (newDuration === null) return;
+
+                const newBreak = prompt('Neue Pause (Minuten):', record.break || 0);
+                if (newBreak === null) return;
+                
+                // Validierung
+                if (newDate && newStartTime && newEndTime && newDuration && !isNaN(parseFloat(newDuration))) {
+                    workHistory[index] = {
+                        date: newDate,
+                        startTime: newStartTime,
+                        endTime: newEndTime,
+                        duration: parseFloat(newDuration).toFixed(2),
+                        break: parseInt(newBreak) || 0
+                    };
+                    
+                    localStorage.setItem('workHistory', JSON.stringify(workHistory));
+                    updateHistory();
+                    updateSummary();
+                    updateMonthDays();
+                } else {
+                    alert('Ungültige Eingabe. Bitte alle Felder ausfüllen und eine gültige Zahl für die Arbeitszeit eingeben.');
+                }
+            }
+
+            function deleteRecord(index) {
+                if (confirm('Möchten Sie diesen Eintrag wirklich löschen?')) {
+                    workHistory.splice(index, 1);
+                    localStorage.setItem('workHistory', JSON.stringify(workHistory));
+                    updateHistory();
+                    updateSummary();
+                    updateMonthDays();
+                }
+            }
+
+            // Reset aktiver Timer (nicht speichern)
+            function resetActiveWork() {
+                if (!isWorking || !workStartTime) return;
+                const ok = confirm('Timer abbrechen und nicht speichern? (Der laufende Zeitraum wird verworfen)');
+                if (!ok) return;
+
+                // Aufräumen
+                isWorking = false;
+                clearInterval(workInterval);
+                workStartTime = null;
+                localStorage.removeItem('activeWork');
+
+                // UI zurücksetzen
+                statusText.textContent = 'Bereit zum Start der Arbeitszeit';
+                statusCard.classList.remove('status-working');
+                statusCard.classList.remove('status-off');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                resetBtn.disabled = true;
+
+                updateSummary();
+            }
+
+            // Teilen-Funktionen
+            function shareLink() {
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Arbeitszeiterfassung',
+                        text: 'Verwalte deine Arbeitszeiten mit dieser einfachen App',
+                        url: window.location.href
+                    })
+                    .catch(console.error);
+                } else {
+                    // Fallback für Browser ohne Web Share API
+                    navigator.clipboard.writeText(window.location.href)
+                        .then(() => alert('Link in Zwischenablage kopiert!'))
+                        .catch(() => prompt('Kopiere diesen Link:', window.location.href));
+                }
+            }
+
+            function exportData() {
+                const data = {
+                    workHistory: workHistory,
+                    settings: {
+                        targetMethod: targetMethodSelect.value,
+                        weeklyHours: weeklyHoursInput.value
+                    },
+                    exportDate: new Date().toISOString()
+                };
+                
+                const dataStr = JSON.stringify(data, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `arbeitszeiten_backup_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+
+            function importData() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                
+                input.onchange = e => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = event => {
+                        try {
+                            const data = JSON.parse(event.target.result);
+                            
+                            if (data.workHistory && Array.isArray(data.workHistory)) {
+                                if (confirm('Möchten Sie Ihre aktuellen Daten mit den importierten Daten ersetzen?')) {
+                                    workHistory = data.workHistory;
+                                    localStorage.setItem('workHistory', JSON.stringify(workHistory));
+                                    
+                                    if (data.settings) {
+                                        if (data.settings.targetMethod) {
+                                            targetMethodSelect.value = data.settings.targetMethod;
+                                            localStorage.setItem('targetMethod', data.settings.targetMethod);
+                                        }
+                                        if (data.settings.weeklyHours) {
+                                            weeklyHoursInput.value = data.settings.weeklyHours;
+                                            localStorage.setItem('weeklyHours', data.settings.weeklyHours);
+                                        }
+                                    }
+                                    
+                                    updateHistory();
+                                    updateSummary();
+                                    updateMonthDays();
+                                    alert('Daten erfolgreich importiert!');
+                                }
+                            } else {
+                                alert('Ungültige Datei. Die Datei enthält keine gültigen Arbeitsdaten.');
+                            }
+                        } catch (error) {
+                            alert('Fehler beim Lesen der Datei. Stellen Sie sicher, dass es sich um eine gültige JSON-Datei handelt.');
+                        }
+                    };
+                    
+                    reader.readAsText(file);
+                };
+                
+                input.click();
+            }
+
+            function shareSummary() {
+                const now = new Date();
+                const today = formatDateToDE(now);
+                const monthTotal = monthHours.textContent;
+                const weekTotal = weekHours.textContent;
+                const todayTotal = todayHours.textContent;
+                
+                const summaryText = `Arbeitszeiten-Zusammenfassung (${today}):
+• Heute: ${todayTotal}
+• Diese Woche: ${weekTotal}
+• Dieser Monat: ${monthTotal}
+                
+Gespeichert mit Arbeitszeiterfassung App`;
+                
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Meine Arbeitszeiten',
+                        text: summaryText
+                    })
+                    .catch(console.error);
+                } else {
+                    navigator.clipboard.writeText(summaryText)
+                        .then(() => alert('Zusammenfassung in Zwischenablage kopiert!'))
+                        .catch(() => prompt('Kopiere diese Zusammenfassung:', summaryText));
+                }
+            }
+
+            function createBackup() {
+                exportData(); // Gleiche Funktion wie Daten exportieren
+            }
+
+            function restoreBackup() {
+                importData(); // Gleiche Funktion wie Daten importieren
+            }
+
+            function clearAllData() {
+                if (confirm('MÖCHTEN SIE WIRKLICH ALLE DATEN LÖSCHEN? Diese Aktion kann nicht rückgängig gemacht werden!')) {
+                    workHistory = [];
+                    localStorage.removeItem('workHistory');
+                    localStorage.removeItem('activeWork');
+                    localStorage.removeItem('targetMethod');
+                    localStorage.removeItem('weeklyHours');
+                    
+                    // UI zurücksetzen
+                    targetMethodSelect.value = 'werktage';
+                    weeklyHoursInput.value = 40;
+                    
+                    updateHistory();
+                    updateSummary();
+                    updateMonthDays();
+                    alert('Alle Daten wurden gelöscht.');
+                }
+            }
+
+            // Manuellen Eintrag hinzufügen
+            addEntryBtn.addEventListener('click', function() {
+                let dateValue = entryDate.value;
+                const hoursValue = parseFloat(entryHours.value);
+                // NEU: Wenn keine Pause angegeben wurde, verwende die automatische Berechnung
+                const breakMinutes = entryBreak.value ? parseInt(entryBreak.value) : calculatePauseFromHours(hoursValue);
+
+                if (!dateValue) {
+                    const d = new Date();
+                    // date input liefert yyyy-mm-dd; wir bleiben bei dieser Form
+                    dateValue = d.toISOString().slice(0,10);
+                }
+
+                if (isNaN(hoursValue) || hoursValue <= 0) {
+                    alert('Bitte gültige Stunden eingeben.');
+                    return;
+                }
+
+                // dateValue ist yyyy-mm-dd -> in dd.mm.yyyy umwandeln
+                const parts = dateValue.split('-');
+                const formatted = `${parts[2]}.${parts[1]}.${parts[0]}`;
+
+                const duration = Math.max(0, hoursValue - (breakMinutes / 60));
+
+                const record = {
+                    date: formatted,
+                    startTime: '-',
+                    endTime: '-',
+                    duration: duration.toFixed(2),
+                    break: breakMinutes
+                };
+
+                workHistory.push(record);
+                localStorage.setItem('workHistory', JSON.stringify(workHistory));
+
+                // Inputs zurücksetzen
+                entryDate.value = '';
+                entryHours.value = '';
+                entryBreak.value = '';
+
+                updateHistory();
+                updateSummary();
+                updateMonthDays();
+            });
+
+            // Einstellungen: persistieren und neu berechnen
+            function saveSettings() {
+                localStorage.setItem('targetMethod', targetMethodSelect.value);
+                localStorage.setItem('weeklyHours', parseFloat(weeklyHoursInput.value) || 40);
+            }
+
+            targetMethodSelect.addEventListener('change', function() {
+                saveSettings();
+                updateSummary();
+            });
+
+            weeklyHoursInput.addEventListener('input', function() {
+                saveSettings();
+                updateSummary();
+            });
+
+            // Event Listeners
+            startBtn.addEventListener('click', startWorkTimer);
+            stopBtn.addEventListener('click', stopWorkTimer);
+            resetBtn.addEventListener('click', resetActiveWork);
+            
+            // Neue Event Listener für Teilen-Funktionen
+            shareLinkBtn.addEventListener('click', shareLink);
+            shareDataBtn.addEventListener('click', exportData);
+            importDataBtn.addEventListener('click', importData);
+            shareSummaryBtn.addEventListener('click', shareSummary);
+            backupDataBtn.addEventListener('click', createBackup);
+            restoreDataBtn.addEventListener('click', restoreBackup);
+            clearDataBtn.addEventListener('click', clearAllData);
+
+            // Initialisierung
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            updateHistory();
+            updateSummary();
+            updateMonthDays();
+
+            // Prüfen, ob bereits eine Arbeitszeit aktiv ist (nach Seitenrefresh)
+            const activeWork = localStorage.getItem('activeWork');
+            if (activeWork) {
+                workStartTime = new Date(activeWork);
+                isWorking = true;
+                statusText.textContent = `Arbeit läuft seit ${workStartTime.toLocaleTimeString('de-DE')}`;
+                statusCard.classList.add('status-working');
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                resetBtn.disabled = false;
+                workInterval = setInterval(updateWorkTime, 1000);
+                updateSummary();
+            }
+        });
+    </script>
+</body>
+</html>
